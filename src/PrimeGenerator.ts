@@ -1,13 +1,14 @@
-import * as NumberTheory from "number-theory";
+import * as BigInteger from "big-integer";
 
 export module PrimeGenerator {
-  export function generatePrime(bits: number) {
-    const bottomNumber = 2 ** (bits - 1);
-    const topNumber = 2 ** bits - 1;
-    for (let i = bottomNumber; i <= topNumber; i += 1) {
-      if (NumberTheory.isPrime(i)) {
-        return i;
-      }
+  export function generatePrime(bits: number): BigInteger.BigInteger {
+    const bBits = BigInteger(bits);
+
+    let currentNumber = BigInteger(2).pow(bBits.prev());
+
+    while (!currentNumber.isPrime()) {
+      currentNumber = currentNumber.next();
     }
+    return currentNumber;
   }
 }

@@ -1,6 +1,6 @@
-import * as NumberTheory from "number-theory";
 import { PrimeGenerator } from "./PrimeGenerator";
 import * as BigInteger from "big-integer";
+import { isString } from "util";
 
 export interface SerializedKeyPair {
   pub: string;
@@ -8,8 +8,8 @@ export interface SerializedKeyPair {
 }
 
 export interface EncrypredMessage {
-  A: number;
-  B: number;
+  A: BigInteger.BigInteger;
+  B: BigInteger.BigInteger;
 }
 
 export interface KeyPair {
@@ -18,27 +18,27 @@ export interface KeyPair {
 }
 
 export interface PubKey {
-  P: number;
-  G: number;
-  Y: number;
+  P: BigInteger.BigInteger;
+  G: BigInteger.BigInteger;
+  Y: BigInteger.BigInteger;
 }
 
 export interface SecKey {
-  X: number;
-  P: number;
+  X: BigInteger.BigInteger;
+  P: BigInteger.BigInteger;
 }
 
 export namespace Crypto {
-  export function generateKeyPair(): SerializedKeyPair {
+  export function generateKeyPair(): any {
     // 1. Generate KeyPair
     // 1.1 Generate random primes (P, G)
-    const P = PrimeGenerator.generatePrime(6);
-    const G = NumberTheory.primitiveRoot(P);
-
+    const P = PrimeGenerator.generatePrime(512);
+    const G = generateRandomGCDNumber(P);
     // 1.2 Generate random number X, where (1 < X < P)
     const X = generateRandomGCDNumber(P);
     // 1.3 Get Y = q^x mod p
-    const Y = getY(P, G, X);
+    const Y = G.modPow(X, P);
+
     // 1.4 Get KeyPair
     const pub = Serializer.serializePubKey({
       P,
@@ -55,18 +55,18 @@ export namespace Crypto {
     };
   }
 
-  export function getY(P: number, G: number, X: number): number {
-    return G ** X % P;
-  }
-
   export function encrypt(message: number, pubKey: string): string {
     const { P, G, Y } = Serializer.unserializePubKey(pubKey);
     // 1. Get K (1 < k < (p - 1))
     const K = generateRandomGCDNumber(P);
     // 2. Get A = G^K mod P
-    const A = G ** K % P;
+    const A = G.modPow(K, P);
     // 3. Get B = Y^K * M mod P
-    const B = (Y ** K * message) % P;
+
+    const B = Y.modPow(K, P)
+      .multiply(message)
+      .mod(P);
+
     const encryptedMessage: EncrypredMessage = {
       A,
       B
@@ -79,14 +79,13 @@ export namespace Crypto {
     const { X, P } = Serializer.unserializeSecKey(secKey);
     const { A, B } = Serializer.unSerializeEncryptedMessage(message);
 
-    const bX = BigInteger(`${X}`);
-    const bP = BigInteger(`${P}`);
-    const bA = BigInteger(`${A}`);
-    const bB = BigInteger(`${B}`);
+    const st = P.subtract(BigInteger(1)).subtract(X);
 
-    const st = bP.subtract(BigInteger(1)).subtract(bX);
+    const result = A.modPow(st, P)
+      .multiply(B)
+      .mod(P);
 
-    return bB.multiply(bA.pow(st)).mod(bP);
+    return result;
   }
 
   export function unSerializeKeyPair(keyPair: SerializedKeyPair): KeyPair {
@@ -96,22 +95,37 @@ export namespace Crypto {
     };
   }
 
-  export function generateRandomGCDNumber(P: number) {
-    for (let i = 2; i < P; i += 1) {
-      if (NumberTheory.gcd(i, P - 1) === 1) {
-        return i;
-      }
+  export function generateRandomGCDNumber(P: BigInteger.BigInteger) {
+    let currentNumber = B(2);
+    while (BigInteger.gcd(currentNumber, P.prev()).notEquals(B(1))) {
+      currentNumber = currentNumber.next();
     }
+    return currentNumber;
+  }
+
+  function B(num: string | number) {
+    if (isString(num)) {
+      return BigInteger(num);
+    }
+    return BigInteger(`${num}`);
   }
 }
 
 export module Serializer {
+  function unSerializeKeys(obj: object) {
+    const finalObject = {};
+    Object.keys(obj).forEach(key => {
+      finalObject[key] = BigInteger(`${obj[key]}`);
+    });
+    return finalObject;
+  }
+
   export function serializePubKey(key: PubKey): string {
     return JSON.stringify(key);
   }
 
   export function unserializePubKey(key: string): PubKey {
-    return JSON.parse(key);
+    return unSerializeKeys(JSON.parse(key)) as PubKey;
   }
 
   export function serializeSecKey(key: SecKey): string {
@@ -119,7 +133,7 @@ export module Serializer {
   }
 
   export function unserializeSecKey(key: string): SecKey {
-    return JSON.parse(key);
+    return unSerializeKeys(JSON.parse(key)) as SecKey;
   }
 
   export function serializeEncryptedMessage(
@@ -131,6 +145,6 @@ export module Serializer {
   export function unSerializeEncryptedMessage(
     encryptedMessage: string
   ): EncrypredMessage {
-    return JSON.parse(encryptedMessage);
+    return unSerializeKeys(JSON.parse(encryptedMessage)) as EncrypredMessage;
   }
 }

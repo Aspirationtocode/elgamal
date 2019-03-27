@@ -1,7 +1,7 @@
 import { Crypto } from "./Crypto";
 
 // Message (integer in our case)
-const message = 20;
+const message = 5909078686;
 // Get key pair
 const keyPair = Crypto.generateKeyPair();
 // Get encrypted message
