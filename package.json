@@ -17,8 +17,6 @@
     "typescript": "^3.3.4000"
   },
   "dependencies": {
-    "big-integer": "^1.6.43",
-    "node-rsa": "^1.0.5",
-    "number-theory": "^1.1.0"
+    "big-integer": "^1.6.43"
   }
 }

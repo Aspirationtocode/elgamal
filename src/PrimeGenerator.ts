@@ -6,9 +6,7 @@ export module PrimeGenerator {
 
     const startSearchNumber = BigInteger(2).pow(bBits.prev());
 
-    const lastSearchNumber = BigInteger(2).pow(
-      bBits.multiply(BigInteger(2)).prev()
-    );
+    const lastSearchNumber = startSearchNumber.plus(BigInteger(1000));
 
     let currentNumber = BigInteger.randBetween(
       startSearchNumber,

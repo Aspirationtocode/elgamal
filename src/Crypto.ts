@@ -1,7 +1,5 @@
 import { PrimeGenerator } from "./PrimeGenerator";
 import * as BigInteger from "big-integer";
-import { isString } from "util";
-
 export interface SerializedKeyPair {
   pub: string;
   sec: string;
@@ -75,7 +73,6 @@ export namespace Crypto {
     // 2. Get A = G^K mod P
     const A = G.modPow(K, P);
     // 3. Get B = Y^K * M mod P
-
     const B = Y.modPow(K, P)
       .multiply(chunk)
       .mod(P);
@@ -122,16 +119,13 @@ export namespace Crypto {
   export function generateRandomGCDNumber(P: BigInteger.BigInteger) {
     let currentNumber = BigInteger.randBetween(Big(2), P);
     while (BigInteger.gcd(currentNumber, P.prev()).notEquals(Big(1))) {
-      currentNumber = BigInteger.randBetween(Big(2), P);
+      currentNumber = currentNumber.next();
     }
     return currentNumber;
   }
 
   function Big(num: string | number) {
-    if (isString(num)) {
-      return BigInteger(num);
-    }
-    return BigInteger(`${num}`);
+    return BigInteger(num.toString());
   }
 }
 
