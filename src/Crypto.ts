@@ -7,7 +7,7 @@ export interface SerializedKeyPair {
   sec: string;
 }
 
-export interface EncrypredMessage {
+export interface EncryptedChunk {
   A: BigInteger.BigInteger;
   B: BigInteger.BigInteger;
 }
@@ -32,7 +32,7 @@ export namespace Crypto {
   export function generateKeyPair(): any {
     // 1. Generate KeyPair
     // 1.1 Generate random primes (P, G)
-    const P = PrimeGenerator.generatePrime(512);
+    const P = PrimeGenerator.generatePrime(256);
     const G = generateRandomGCDNumber(P);
     // 1.2 Generate random number X, where (1 < X < P)
     const X = generateRandomGCDNumber(P);
@@ -55,7 +55,18 @@ export namespace Crypto {
     };
   }
 
-  export function encrypt(message: number, pubKey: string): string {
+  export function encrypt(message: string, pubKey: string): string {
+    const encryptedMessageChunks = message.split("").map(chunk => {
+      const encryptedChunk = encryptChunk(Big(chunk.charCodeAt(0)), pubKey);
+      return encryptedChunk;
+    });
+    return Serializer.serializeEncryptedMessage(encryptedMessageChunks);
+  }
+
+  function encryptChunk(
+    chunk: BigInteger.BigInteger,
+    pubKey: string
+  ): EncryptedChunk {
     const { P, G, Y } = Serializer.unserializePubKey(pubKey);
     // 1. Get K (1 < k < (p - 1))
     const K = generateRandomGCDNumber(P);
@@ -64,20 +75,30 @@ export namespace Crypto {
     // 3. Get B = Y^K * M mod P
 
     const B = Y.modPow(K, P)
-      .multiply(message)
+      .multiply(chunk)
       .mod(P);
 
-    const encryptedMessage: EncrypredMessage = {
+    const encryptedChunk: EncryptedChunk = {
       A,
       B
     };
 
-    return Serializer.serializeEncryptedMessage(encryptedMessage);
+    return encryptedChunk;
   }
 
-  export function decrypt(message: string, secKey: string) {
+  export function decrypt(message: string, secKey: string): string {
+    const encryptedChunks = Serializer.unSerializeEncryptedMessage(message);
+    return encryptedChunks
+      .map(encryptedChunk => {
+        const decryptedChunk = decryptChunk(encryptedChunk, secKey);
+        return String.fromCharCode(decryptedChunk.toJSNumber());
+      })
+      .join("");
+  }
+
+  function decryptChunk(encryptedChunk: EncryptedChunk, secKey: string) {
     const { X, P } = Serializer.unserializeSecKey(secKey);
-    const { A, B } = Serializer.unSerializeEncryptedMessage(message);
+    const { A, B } = encryptedChunk;
 
     const st = P.subtract(BigInteger(1)).subtract(X);
 
@@ -96,14 +117,14 @@ export namespace Crypto {
   }
 
   export function generateRandomGCDNumber(P: BigInteger.BigInteger) {
-    let currentNumber = B(2);
-    while (BigInteger.gcd(currentNumber, P.prev()).notEquals(B(1))) {
+    let currentNumber = Big(2);
+    while (BigInteger.gcd(currentNumber, P.prev()).notEquals(Big(1))) {
       currentNumber = currentNumber.next();
     }
     return currentNumber;
   }
 
-  function B(num: string | number) {
+  function Big(num: string | number) {
     if (isString(num)) {
       return BigInteger(num);
     }
@@ -137,14 +158,17 @@ export module Serializer {
   }
 
   export function serializeEncryptedMessage(
-    encryptedMessage: EncrypredMessage
-  ) {
+    encryptedMessage: EncryptedChunk[]
+  ): string {
     return JSON.stringify(encryptedMessage);
   }
 
   export function unSerializeEncryptedMessage(
     encryptedMessage: string
-  ): EncrypredMessage {
-    return unSerializeKeys(JSON.parse(encryptedMessage)) as EncrypredMessage;
+  ): EncryptedChunk[] {
+    const encryptedChunksArray = JSON.parse(encryptedMessage);
+    return encryptedChunksArray.map(c =>
+      unSerializeKeys(c)
+    ) as EncryptedChunk[];
   }
 }
