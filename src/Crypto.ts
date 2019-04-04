@@ -29,10 +29,10 @@ export interface SecKey {
 }
 
 export namespace Crypto {
-  export function generateKeyPair(): any {
+  export function generateKeyPair(bits: number): any {
     // 1. Generate KeyPair
     // 1.1 Generate random primes (P, G)
-    const P = PrimeGenerator.generatePrime(256);
+    const P = PrimeGenerator.generatePrime(bits);
     const G = generateRandomGCDNumber(P);
     // 1.2 Generate random number X, where (1 < X < P)
     const X = generateRandomGCDNumber(P);
@@ -55,11 +55,13 @@ export namespace Crypto {
     };
   }
 
-  export function encrypt(message: string, pubKey: string): string {
-    const encryptedMessageChunks = message.split("").map(chunk => {
-      const encryptedChunk = encryptChunk(Big(chunk.charCodeAt(0)), pubKey);
-      return encryptedChunk;
-    });
+  export function encrypt(message: string | object, pubKey: string): string {
+    const encryptedMessageChunks = JSON.stringify(message)
+      .split("")
+      .map(chunk => {
+        const encryptedChunk = encryptChunk(Big(chunk.charCodeAt(0)), pubKey);
+        return encryptedChunk;
+      });
     return Serializer.serializeEncryptedMessage(encryptedMessageChunks);
   }
 
@@ -88,12 +90,13 @@ export namespace Crypto {
 
   export function decrypt(message: string, secKey: string): string {
     const encryptedChunks = Serializer.unSerializeEncryptedMessage(message);
-    return encryptedChunks
+    const decryptedMessageString = encryptedChunks
       .map(encryptedChunk => {
         const decryptedChunk = decryptChunk(encryptedChunk, secKey);
         return String.fromCharCode(decryptedChunk.toJSNumber());
       })
       .join("");
+    return JSON.parse(decryptedMessageString);
   }
 
   function decryptChunk(encryptedChunk: EncryptedChunk, secKey: string) {
@@ -117,9 +120,9 @@ export namespace Crypto {
   }
 
   export function generateRandomGCDNumber(P: BigInteger.BigInteger) {
-    let currentNumber = Big(2);
+    let currentNumber = BigInteger.randBetween(Big(2), P);
     while (BigInteger.gcd(currentNumber, P.prev()).notEquals(Big(1))) {
-      currentNumber = currentNumber.next();
+      currentNumber = BigInteger.randBetween(Big(2), P);
     }
     return currentNumber;
   }
@@ -132,7 +135,7 @@ export namespace Crypto {
   }
 }
 
-export module Serializer {
+module Serializer {
   function unSerializeKeys(obj: object) {
     const finalObject = {};
     Object.keys(obj).forEach(key => {
