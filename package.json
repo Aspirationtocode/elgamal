@@ -18,6 +18,7 @@
     "typescript": "^3.3.4000"
   },
   "dependencies": {
+    "base-conversion": "^3.3.0",
     "big-integer": "^1.6.43"
   }
 }

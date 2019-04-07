@@ -1,5 +1,6 @@
 import { PrimeGenerator } from "./PrimeGenerator";
 import * as BigInteger from "big-integer";
+import { StringConverter } from "./StringConverter";
 
 export interface SerializedKeyPair {
   pub: string;
@@ -60,7 +61,6 @@ export namespace Crypto {
 
   export function encrypt(message: string | object, pubKey: string): string {
     const integerMessage = Serializer.getInteger(JSON.stringify(message));
-    console.log(integerMessage);
 
     const unserializedPubKey = Serializer.unserializePubKey(pubKey);
     const { P } = unserializedPubKey;
@@ -124,7 +124,6 @@ export namespace Crypto {
         acc + decryptChunk(encryptedChunk, secKey).toString(),
       ""
     );
-    console.log(decryptedMessage);
 
     const messageString = Serializer.getString(BigInteger(decryptedMessage));
     return messageString;
@@ -172,11 +171,11 @@ export module Serializer {
   }
 
   export function getInteger(str: string): BigInteger.BigInteger {
-    return BigInteger(Buffer.from(str).toString("hex"), 16);
+    return BigInteger(StringConverter.fromStringToHex(str), 16);
   }
 
   export function getString(int: BigInteger.BigInteger): string {
-    return Buffer.from(int.toString(16), "hex").toString();
+    return StringConverter.fromHexToString(int.toString(16));
   }
 
   export function serializePubKey(key: PubKey): string {
