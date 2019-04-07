@@ -13,6 +13,7 @@
     "@types/big-integer": "0.0.31",
     "@types/node": "^11.11.6",
     "@types/node-rsa": "^1.0.0",
+    "hex-string": "^1.0.3",
     "ts-node": "^7.0.1",
     "typescript": "^3.3.4000"
   },

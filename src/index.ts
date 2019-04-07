@@ -1,9 +1,9 @@
 import { Crypto } from "./Crypto";
 
 // Message (integer in our case)
-const message = "How old are you?";
+const message = "How old are you";
 // Get key pair
-const keyPair = Crypto.generateKeyPair(256);
+const keyPair = Crypto.generateKeyPair(128);
 // Get encrypted message
 const encryptedMessage = Crypto.encrypt(message, keyPair.pub);
 // Get decrypted message

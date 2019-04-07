@@ -1,5 +1,6 @@
 import { PrimeGenerator } from "./PrimeGenerator";
 import * as BigInteger from "big-integer";
+
 export interface SerializedKeyPair {
   pub: string;
   sec: string;
@@ -9,6 +10,10 @@ export interface EncryptedChunk {
   A: BigInteger.BigInteger;
   B: BigInteger.BigInteger;
 }
+
+export type EncryptedMessage = EncryptedChunk[];
+
+export type Chunk = BigInteger.BigInteger;
 
 export interface KeyPair {
   pub: PubKey;
@@ -54,21 +59,25 @@ export namespace Crypto {
   }
 
   export function encrypt(message: string | object, pubKey: string): string {
-    const encryptedMessageChunks = JSON.stringify(message)
-      .split("")
-      .map(chunk => {
-        const encryptedChunk = encryptChunk(Big(chunk.charCodeAt(0)), pubKey);
-        return encryptedChunk;
-      });
-    return Serializer.serializeEncryptedMessage(encryptedMessageChunks);
+    const integerMessage = Serializer.getInteger(JSON.stringify(message));
+    console.log(integerMessage);
+
+    const unserializedPubKey = Serializer.unserializePubKey(pubKey);
+    const { P } = unserializedPubKey;
+    const chunks = getChunksFromNumber(integerMessage, P.bitLength());
+
+    const encryptedMessage = chunks.map(chunk =>
+      encryptChunk(chunk, unserializedPubKey)
+    );
+
+    const serializedEncryptedMessage = Serializer.serializeEncryptedMessage(
+      encryptedMessage
+    );
+    return serializedEncryptedMessage;
   }
 
-  function encryptChunk(
-    chunk: BigInteger.BigInteger,
-    pubKey: string
-  ): EncryptedChunk {
-    const { P, G, Y } = Serializer.unserializePubKey(pubKey);
-    // 1. Get K (1 < k < (p - 1))
+  function encryptChunk(chunk: BigInteger.BigInteger, pubKey: PubKey) {
+    const { P, G, Y } = pubKey;
     const K = generateRandomGCDNumber(P);
     // 2. Get A = G^K mod P
     const A = G.modPow(K, P);
@@ -77,36 +86,60 @@ export namespace Crypto {
       .multiply(chunk)
       .mod(P);
 
-    const encryptedChunk: EncryptedChunk = {
+    const encryptedMessage: EncryptedChunk = {
       A,
       B
     };
+    return encryptedMessage;
+  }
 
-    return encryptedChunk;
+  function getChunksFromNumber(
+    number: BigInteger.BigInteger,
+    bits: BigInteger.BigInteger
+  ): Chunk[] {
+    const chunks = [];
+    const stringNumber = number.toString();
+    let temporaryNumber = "";
+    for (let i = 0; i < stringNumber.length; i += 1) {
+      const currentNumber = BigInteger(temporaryNumber + stringNumber[i]);
+      const currentBitLength = BigInteger(currentNumber).bitLength();
+      if (currentBitLength.greaterOrEquals(bits)) {
+        chunks.push(BigInteger(temporaryNumber));
+        temporaryNumber = stringNumber[i];
+      } else {
+        temporaryNumber = currentNumber.toString();
+      }
+    }
+
+    return temporaryNumber
+      ? chunks.concat(BigInteger(temporaryNumber))
+      : chunks;
   }
 
   export function decrypt(message: string, secKey: string): string {
-    const encryptedChunks = Serializer.unSerializeEncryptedMessage(message);
-    const decryptedMessageString = encryptedChunks
-      .map(encryptedChunk => {
-        const decryptedChunk = decryptChunk(encryptedChunk, secKey);
-        return String.fromCharCode(decryptedChunk.toJSNumber());
-      })
-      .join("");
-    return JSON.parse(decryptedMessageString);
+    const encryptedMessage = Serializer.unSerializeEncryptedMessage(message);
+
+    const decryptedMessage = encryptedMessage.reduce(
+      (acc, encryptedChunk) =>
+        acc + decryptChunk(encryptedChunk, secKey).toString(),
+      ""
+    );
+    console.log(decryptedMessage);
+
+    const messageString = Serializer.getString(BigInteger(decryptedMessage));
+    return messageString;
   }
 
-  function decryptChunk(encryptedChunk: EncryptedChunk, secKey: string) {
+  function decryptChunk(encryptedChunk: EncryptedChunk, secKey: string): Chunk {
     const { X, P } = Serializer.unserializeSecKey(secKey);
     const { A, B } = encryptedChunk;
 
     const st = P.subtract(BigInteger(1)).subtract(X);
 
-    const result = A.modPow(st, P)
+    const decryptedChunk = A.modPow(st, P)
       .multiply(B)
       .mod(P);
-
-    return result;
+    return decryptedChunk;
   }
 
   export function unSerializeKeyPair(keyPair: SerializedKeyPair): KeyPair {
@@ -129,13 +162,21 @@ export namespace Crypto {
   }
 }
 
-module Serializer {
+export module Serializer {
   function unSerializeKeys(obj: object) {
     const finalObject = {};
     Object.keys(obj).forEach(key => {
       finalObject[key] = BigInteger(`${obj[key]}`);
     });
     return finalObject;
+  }
+
+  export function getInteger(str: string): BigInteger.BigInteger {
+    return BigInteger(Buffer.from(str).toString("hex"), 16);
+  }
+
+  export function getString(int: BigInteger.BigInteger): string {
+    return Buffer.from(int.toString(16), "hex").toString();
   }
 
   export function serializePubKey(key: PubKey): string {
@@ -155,17 +196,18 @@ module Serializer {
   }
 
   export function serializeEncryptedMessage(
-    encryptedMessage: EncryptedChunk[]
+    encryptedMessage: EncryptedMessage
   ): string {
     return JSON.stringify(encryptedMessage);
   }
 
   export function unSerializeEncryptedMessage(
     encryptedMessage: string
-  ): EncryptedChunk[] {
-    const encryptedChunksArray = JSON.parse(encryptedMessage);
-    return encryptedChunksArray.map(c =>
-      unSerializeKeys(c)
-    ) as EncryptedChunk[];
+  ): EncryptedMessage {
+    const encryptedChunks = JSON.parse(encryptedMessage);
+    const unSerializedEncryptedChunks = encryptedChunks.map(encryptedChunk =>
+      unSerializeKeys(encryptedChunk)
+    );
+    return unSerializedEncryptedChunks as EncryptedMessage;
   }
 }
