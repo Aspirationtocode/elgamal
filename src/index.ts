@@ -1,9 +1,8 @@
 import { Crypto } from "./Crypto";
-import { StringConverter } from "./StringConverter";
 
-const message = "123456".repeat(7);
+const message = Array.from({ length: 10 }).fill({ kek: "123" });
 // Get key pair
-const keyPair = Crypto.generateKeyPair(256);
+const keyPair = Crypto.generateKeyPair(1024);
 // Get encrypted message
 const encryptedMessage = Crypto.encrypt(message, keyPair.pub);
 // Get decrypted message
