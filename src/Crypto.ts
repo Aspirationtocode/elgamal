@@ -100,6 +100,7 @@ export namespace Crypto {
     const chunks = [];
     const stringNumber = number.toString();
     let temporaryNumber = "";
+
     for (let i = 0; i < stringNumber.length; i += 1) {
       const currentNumber = BigInteger(temporaryNumber + stringNumber[i]);
       const currentBitLength = BigInteger(currentNumber).bitLength();
@@ -111,9 +112,15 @@ export namespace Crypto {
       }
     }
 
-    return temporaryNumber
+    const result = temporaryNumber
       ? chunks.concat(BigInteger(temporaryNumber))
       : chunks;
+
+    console.log(result);
+    console.log(stringNumber);
+
+    // console.log length of result and enter number
+    return result;
   }
 
   export function decrypt(message: string, secKey: string): string {
@@ -124,7 +131,6 @@ export namespace Crypto {
         acc + decryptChunk(encryptedChunk, secKey).toString(),
       ""
     );
-
     const messageString = Serializer.getString(BigInteger(decryptedMessage));
     return messageString;
   }

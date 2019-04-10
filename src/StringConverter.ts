@@ -16,7 +16,6 @@ export module StringConverter {
     let finalString = "";
     for (let i = 0; i < hex.length; i += 2) {
       const hexCode = hex[i] + hex[i + 1];
-      console.log(hexCode);
       const symbolCode = fromHexToDec(hexCode);
 
       const symbol = String.fromCharCode(+symbolCode);
