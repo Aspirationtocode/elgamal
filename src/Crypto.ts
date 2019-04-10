@@ -107,17 +107,17 @@ export namespace Crypto {
       const messageChunkBitLength = messageChunkInt.bitLength();
       if (messageChunkBitLength.greaterOrEquals(bits)) {
         chunks.push(Serializer.getInteger(temporaryMessage));
-        temporaryMessage = "";
+        temporaryMessage = message[i];
       } else {
         temporaryMessage = messageChunk.toString();
       }
     }
 
-    if (temporaryMessage) {
-      return chunks.concat(Serializer.getInteger(temporaryMessage));
-    }
+    const result = temporaryMessage
+      ? chunks.concat(Serializer.getInteger(temporaryMessage))
+      : chunks;
 
-    return chunks;
+    return result;
   }
 
   export function decrypt(message: string, secKey: string): string {
