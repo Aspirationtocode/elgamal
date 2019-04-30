@@ -1,10 +1,14 @@
 import { Crypto } from "./Crypto";
 
-const message = Array.from({ length: 200 }).fill({ kek: "123" });
+const message = JSON.stringify(
+  Array.from({ length: 400 }).fill({ kek: "lol" })
+);
+
 // Get key pair
 const keyPair = Crypto.generateKeyPair(256);
-// Get encrypted message
+
+// Encrypt message public key
 const encryptedMessage = Crypto.encrypt(message, keyPair.pub);
-// Get decrypted message
+// Decrypt message with secret key
 const decryptedMessage = Crypto.decrypt(encryptedMessage, keyPair.sec);
 console.log(decryptedMessage);

@@ -59,13 +59,10 @@ export namespace Crypto {
     };
   }
 
-  export function encrypt(message: string | object, pubKey: string): string {
+  export function encrypt(message: string, pubKey: string): string {
     const unserializedPubKey = Serializer.unserializePubKey(pubKey);
     const { P } = unserializedPubKey;
-    const messageChunks = getChunksFromMessage(
-      JSON.stringify(message),
-      P.bitLength()
-    );
+    const messageChunks = getChunksFromMessage(message, P.bitLength());
 
     const encryptedMessage = messageChunks.map(chunk =>
       encryptChunk(chunk, unserializedPubKey)
@@ -125,7 +122,6 @@ export namespace Crypto {
 
     const decryptedMessage = encryptedMessage.reduce((acc, encryptedChunk) => {
       const decryptedChunk = decryptChunk(encryptedChunk, secKey);
-
       return acc + Serializer.getString(decryptedChunk);
     }, "");
     return decryptedMessage;
