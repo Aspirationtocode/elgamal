@@ -33,7 +33,7 @@ export interface SecKey {
 }
 
 export namespace Crypto {
-  export function generateKeyPair(bits: number): any {
+  export function generateKeyPair(bits: number = 256): SerializedKeyPair {
     // 1. Generate KeyPair
     // 1.1 Generate random primes (P, G)
     const P = PrimeGenerator.generatePrime(bits);

@@ -5,7 +5,7 @@ const BigInteger = require("big-integer");
 const StringConverter_1 = require("./StringConverter");
 var Crypto;
 (function (Crypto) {
-    function generateKeyPair(bits) {
+    function generateKeyPair(bits = 256) {
         // 1. Generate KeyPair
         // 1.1 Generate random primes (P, G)
         const P = PrimeGenerator_1.PrimeGenerator.generatePrime(bits);

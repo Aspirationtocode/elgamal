@@ -23,7 +23,7 @@ export interface SecKey {
     P: BigInteger.BigInteger;
 }
 export declare namespace Crypto {
-    function generateKeyPair(bits: number): any;
+    function generateKeyPair(bits?: number): SerializedKeyPair;
     function encrypt(message: string, pubKey: string): string;
     function decrypt(message: string, secKey: string): string;
     function unSerializeKeyPair(keyPair: SerializedKeyPair): KeyPair;
