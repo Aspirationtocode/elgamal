@@ -1,20 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const PrimeGenerator_1 = require("./PrimeGenerator");
+const PrimeGenerator_1 = require("../PrimeGenerator");
 const BigInteger = require("big-integer");
-const StringConverter_1 = require("./StringConverter");
+const StringConverter_1 = require("../StringConverter");
 var Crypto;
 (function (Crypto) {
     function generateKeyPair(bits = 256) {
-        // 1. Generate KeyPair
-        // 1.1 Generate random primes (P, G)
         const P = PrimeGenerator_1.PrimeGenerator.generatePrime(bits);
         const G = generateRandomGCDNumber(P);
-        // 1.2 Generate random number X, where (1 < X < P)
         const X = generateRandomGCDNumber(P);
-        // 1.3 Get Y = q^x mod p
         const Y = G.modPow(X, P);
-        // 1.4 Get KeyPair
         const pub = Serializer.serializePubKey({
             P,
             G,
@@ -42,9 +37,7 @@ var Crypto;
     function encryptChunk(chunk, pubKey) {
         const { P, G, Y } = pubKey;
         const K = generateRandomGCDNumber(P);
-        // 2. Get A = G^K mod P
         const A = G.modPow(K, P);
-        // 3. Get B = Y^K * M mod P
         const B = Y.modPow(K, P)
             .multiply(chunk)
             .mod(P);

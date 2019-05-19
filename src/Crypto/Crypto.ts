@@ -1,6 +1,6 @@
-import { PrimeGenerator } from "./PrimeGenerator";
+import { PrimeGenerator } from "../PrimeGenerator";
 import * as BigInteger from "big-integer";
-import { StringConverter } from "./StringConverter";
+import { StringConverter } from "../StringConverter";
 
 export interface SerializedKeyPair {
   pub: string;

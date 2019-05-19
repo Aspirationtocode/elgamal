@@ -1,1 +1,1 @@
-export { Crypto } from "./Crypto";
+export { Crypto } from "./Crypto/Crypto";
